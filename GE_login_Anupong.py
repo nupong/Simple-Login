@@ -25,7 +25,9 @@ def optionMenu():
     print("-"*50)
 
 def loginMenu():
+    print("Welcome to Login Menu")
     count = 0
+    global userAccount
     while count < 3:
 
         existingUser = input("Please enter your user name: ")
@@ -67,6 +69,7 @@ def loginMenu():
     exit()
 
 def registerMenu():
+    print("Welcome to Register Menu")
     while True:
         newUser = input("Please choose username: ")
         for eachLine in accInfo:
@@ -81,7 +84,7 @@ def registerMenu():
                     if newPass.lower() == "a" and len(newPass) == 1:
                         print("You have chosen", newPass, "system to auto-generate the password")
                         newPass = ranPwd()
-                    elif len(newPass) <8:
+                    elif len(newPass) < 8:
                         print("Your password is too short")
                         print("Please choose option menu again")
                         return                                                                                          # User force to choose option Menu again
@@ -98,6 +101,7 @@ def registerMenu():
                         print("Your username: ",newUser)
                         print("Your password: ", newPass)
                         print("Your email address: ", emailAddress)
+                        print("Please login again if you want to access the system")
                         encPwd = rsa.encrypt(newPass.encode(), pbKey).hex()
 
                         writeAccount(newUser, newPass, encPwd, emailAddress, currentDate, currentDate)
@@ -109,6 +113,15 @@ def registerMenu():
                 else:
                     print("You haven't choose the correct username policy")
                     break
+
+
+def resetPwdMenu():
+    global userAccount
+
+    print("Welcome to Reset Password Menu")
+    userAccount[1], userAccount[2] = resetPwd()
+    userAccount[4] = currentDate
+    writeAccount(userAccount[0], userAccount[1], userAccount[2], userAccount[3], userAccount[4], userAccount[5])
 
 
 def resetPwd():
@@ -134,9 +147,17 @@ def resetPwd():
     encPwd = rsa.encrypt(newPass.encode(), pbKey).hex()
     return newPass, encPwd
 def viewAccountMenu():
-    for eachLine in accInfo:
-        for eachItem in eachLine.split(","):
-            print(eachItem)
+    print("Welcome to View Account Menu")
+    print("Only System Administrator can access this menu")
+    print("Please login with SA credentials")
+    saUser = input("Please type SA account: ")
+    saPswd = input("Please type SA password: ")
+    if saUser == adminUser and saPswd == adminPass:
+        for eachLine in accInfo:
+            for eachItem in eachLine.split(","):
+                print(eachItem)
+    else:
+        print("You haven't provided valid SA credentials")
 def ranPwd():
     pwdLength = 8
 
@@ -247,17 +268,23 @@ while choice.lower() != "x":
     elif choice.lower() == "b":
         registerMenu()
     elif choice.lower() == "c":
-        pass
+        viewAccountMenu()
     elif choice.lower() == "d":
-        pass
+        if userAccount[0] == "":
+            print("You haven't login to the system yet")
+            print("Please login with valid username before choose this option")
+        else:
+            print("Hi", userAccount[0], "You will be redirected to reset your password now")
+            resetPwdMenu()
     elif choice.lower() == "m":                                                                                         # To display option menu again
         optionMenu()
     elif choice.lower() == "x":
+        print("You have chosen to exit the program")
         pass
     else:
         print("You haven't chosen the valid option")
 
-accFile.close()
+# accFile.close()
 logoutDateTime = datetime.now()
 loginPeriod = logoutDateTime - currentDateTime
 
