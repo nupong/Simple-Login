@@ -1,6 +1,6 @@
 # -------------------------------- SOA ----------------
 #                                Anupong
-#                                20230524
+#                                20230531
 #					        SOA Assignment
 #					            Simple Login
 
@@ -30,27 +30,36 @@ def loginMenu():
 
         existingUser = input("Please enter your user name: ")
         existingPwd = input("Please enter your password: ")
-        userName, passWord, enCryptedPwd, eMail, lastReset, lastLogin, dayAfterResetPwd, dayAfterLastLogin = validateUser(existingUser, existingPwd)
-        if dayAfterResetPwd >= dayToReset:
+        # userName, passWord, enCryptedPwd, eMail, lastReset, lastLogin, dayAfterResetPwd, dayAfterLastLogin = validateUser(existingUser, existingPwd)
+        userAccount = validateUser(existingUser, existingPwd)
+        print(userAccount)
+        if userAccount[6] >= dayToReset:
             print("Welcome back", existingUser)
-            print("Your last login was", dayAfterLastLogin, "days ago")
-            print("You haven't reset your password for", dayAfterResetPwd, "days")
+            print("Your last login was", userAccount[7], "days ago")
+            print("You haven't reset your password for", userAccount[6], "days")
             print("You must reset your password now")
-            newResetPwd, newEncPwd = resetPwdMenu()
+            userAccount[4] = currentDate
+            userAccount[5] = currentDate
+            userAccount[1], userAccount[2] = resetPwd()
+            writeAccount(userAccount[0],userAccount[1],userAccount[2],userAccount[3],userAccount[4],userAccount[5])
             return
-        elif dayAfterResetPwd >= dayToReset -dayToNotify:
+        elif userAccount[6] >= dayToReset - dayToNotify:
             print("Welcome back", existingUser)
-            print("Your last login was", dayAfterLastLogin, "days ago")
-            print("You haven't reset your password for", dayAfterResetPwd, "days")
-            print("You should reset your password within next", dayToReset - dayAfterResetPwd, "days")
+            print("Your last login was", userAccount[7], "days ago")
+            print("You haven't reset your password for", userAccount[6], "days")
+            print("You should reset your password within next", dayToReset - userAccount[6], "days")
+            userAccount[5] = currentDate
+            writeAccount(userAccount[0],userAccount[1],userAccount[2],userAccount[3],userAccount[4],userAccount[5])
             return
-        elif dayAfterResetPwd >= 0:
+
+        elif userAccount[6] >= 0:
             print("Welcome back", existingUser)
-            print("Your last login was", dayAfterLastLogin, "days ago")
-            print("You haven't reset your password for", dayAfterResetPwd, "days")
+            print("Your last login was", userAccount[7], "days ago")
+            print("You haven't reset your password for", userAccount[6], "days")
+            userAccount[5] = currentDate
+            writeAccount(userAccount[0],userAccount[1],userAccount[2],userAccount[3],userAccount[4],userAccount[5])
             return
         else:
-            print("Type: ",type(dayAfterResetPwd), dayAfterResetPwd)
             print("Either your username or password is invalid, please try again!")
             count = count + 1
     print("-"*50)
@@ -102,19 +111,26 @@ def registerMenu():
                     break
 
 
-def resetPwdMenu():
+def resetPwd():
     while True:
         newPass = input("Please choose your password or type 'a' to auto-generate password: ")
+        print("You have chosen: ", newPass)
         if newPass.lower() == "a" and len(newPass) == 1:
+            print("Password will be auto-generate")
             newPass = ranPwd()
+            print("Your new password is", newPass)
+            break
         elif len(newPass) < 8:
             print("Your password is too short")
-            print("Please choose option menu again")
-            return
+            # print("Please choose option menu again")
+            # return
         else:
             if validatePass(newPass) < 3:
                 print("Your password combination doesn't follow company's policies")
                 print("Please try again!")
+            else:
+                print("Your new password is", newPass)
+                break
     encPwd = rsa.encrypt(newPass.encode(), pbKey).hex()
     return newPass, encPwd
 def viewAccountMenu():
@@ -150,22 +166,40 @@ def validatePass(password):
 
 def validateUser(existingUser, existingPwd):
     for eachLine in accInfo:
-        userName, passWord, enCryptedPwd, eMail, lastReset, lastLogin = eachLine.strip().split(",")
-        if existingUser == userName and existingPwd == passWord:
+        eachItem = []
+        # userName, passWord, enCryptedPwd, eMail, lastReset, lastLogin = eachLine.strip().split(",")
+        eachItem = eachLine.strip().split(",")
+        if existingUser == eachItem[0] and existingPwd == eachItem[1]:
+            lastReset = datetime.strptime(eachItem[4], "%d/%m/%y")
+            lastLogin = datetime.strptime(eachItem[5], "%d/%m/%y")
+            print(lastReset, lastLogin)
+            eachItem[4] = datetime.strftime(lastReset, "%d/%m/%y")
+            eachItem[5] = datetime.strftime(lastLogin, "%d/%m/%y")
+            eachItem.append((currentDateTime - lastReset).days)
+            eachItem.append((currentDateTime - lastLogin).days)
+            return eachItem
+    eachItem = [existingUser,existingPwd,"","","","",-1,-1]
+    return eachItem
 
-            lastReset = datetime.strptime(lastReset, "%d/%m/%y")
-            lastLogin = datetime.strptime(lastLogin, "%d/%m/%y")
-            dayPwd = (currentDateTime - lastReset).days
-            dayLogin = (currentDateTime - lastLogin).days
-            return userName, passWord, enCryptedPwd, eMail, lastReset, lastLogin, dayPwd, dayLogin
-        else:
-            dayPwd = -1
-            dayLogin = -1
-    return userName, passWord, enCryptedPwd, eMail, lastReset, lastLogin, dayPwd, dayLogin
 def writeAccount(user, pwd, enc, email, login, change):
-    newLine = [user, pwd, enc, email, str(login), str(change)]
-    accFile.write("\n")
-    accFile.write(",".join(newLine))
+
+    lineIndex = -1
+    for i, eachLine in enumerate(accInfo):
+        eachItem = eachLine.strip().split(",")
+        if user == eachItem[0]:
+            lineIndex = i                                                                                               # Get line index where username is existed
+            oldLine = [user, pwd, enc, email, str(login), str(change)]
+            accInfo[i] = ",".join(oldLine) + "\n"                                                                       # Replace new information to line index
+            with open(fileName,"w") as writeFile:
+                writeFile.writelines(accInfo)
+
+    if lineIndex == -1:                                                                                                 # If username is new register user
+        newLine = [user, pwd, enc, email, str(login), str(change)]
+        with open(fileName, "r+") as writeFile:
+            info = writeFile.readlines()
+            # print(info)
+            writeFile.write("\n")
+            writeFile.write(",".join(newLine))
 
     return
 # -------------------------variables--------------
@@ -175,6 +209,7 @@ currentDateTime = datetime.now()
 currentDate = currentDateTime.strftime("%d/%m/%y")
 choice = ""
 userName = ""
+userAccount = ["","","","","","",0,0]
 adminUser = "admin"
 adminPass = "adminpass"
 dayAfterResetPwd = 0
@@ -188,17 +223,17 @@ capAlphaChar = string.ascii_uppercase
 numChar = string.digits
 allPossibleChar = nonAlphaString + smallAlphaChar + capAlphaChar + numChar                                              # Concatenate with all possible characters for randomising password
 
-pvKey, pbKey = rsa.newkeys(256)
+pvKey, pbKey = rsa.newkeys(256)                                                                                         # Generate Keys for encryption
 # ----------------------the main code----------------
 try:
-    accFile = open(fileName, "r+")
+    with open(fileName, 'r') as accFile:
+        accInfo = accFile.readlines()
 except FileNotFoundError:
     accFile = open(fileName, "w+")
-
-accInfo = accFile.readlines()
-for line in accInfo:
-    info = line.split(",")
-    print(info[0])
+    accInfo = accFile.readlines()
+# for line in accInfo:
+#     info = line.split(",")
+#     print(info[0])
 
 print("-"*50)
 print("Welcome to Gelos Enterprises System")
