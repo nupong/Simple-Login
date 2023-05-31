@@ -1,19 +1,19 @@
-# -------------------------------- SOA ----------------
+# -------------------------------- SOA -----------------------------------------
 #                                Anupong
 #                                20230531
-#					        SOA Assignment
-#					            Simple Login
+#					            SOA Assignment
+#					            Simple Login for Gelos
 
 
 
-# ----------------------Libraries----------------------
+# ----------------------Libraries----------------------------------------------
 from datetime import datetime
 import string
 import rsa
 import secrets
 
 
-# ----------------------my function----------------
+# ----------------------my function--------------------------------------------
 def optionMenu():
     print("-" * 50)
     print("a) Login")
@@ -28,14 +28,15 @@ def loginMenu():
     print("Welcome to Login Menu")
     count = 0
     global userAccount
-    while count < 3:
+    while count < 3:                                                                                                    # Loop for checking 3-times login failed
 
         existingUser = input("Please enter your user name: ")
         existingPwd = input("Please enter your password: ")
-        # userName, passWord, enCryptedPwd, eMail, lastReset, lastLogin, dayAfterResetPwd, dayAfterLastLogin = validateUser(existingUser, existingPwd)
-        userAccount = validateUser(existingUser, existingPwd)
-        print(userAccount)
-        if userAccount[6] >= dayToReset:
+        userAccount = validateUser(existingUser, existingPwd)                                                           # userAccount size 8 for collect info
+                                                                                                                        # 0 username, # 1 password, 2 encrypted,
+                                                                                                                        # 3 email, 4 last reset, 5 last login,
+                                                                                                                        # 6 day after reset, 7 day after login
+        if userAccount[6] >= dayToReset:                                                                                # Check if reset password
             print("Welcome back", existingUser)
             print("Your last login was", userAccount[7], "days ago")
             print("You haven't reset your password for", userAccount[6], "days")
@@ -45,7 +46,7 @@ def loginMenu():
             userAccount[1], userAccount[2] = resetPwd()
             writeAccount(userAccount[0],userAccount[1],userAccount[2],userAccount[3],userAccount[4],userAccount[5])
             return
-        elif userAccount[6] >= dayToReset - dayToNotify:
+        elif userAccount[6] >= dayToReset - dayToNotify:                                                                # Warn if almost reset password
             print("Welcome back", existingUser)
             print("Your last login was", userAccount[7], "days ago")
             print("You haven't reset your password for", userAccount[6], "days")
@@ -54,14 +55,14 @@ def loginMenu():
             writeAccount(userAccount[0],userAccount[1],userAccount[2],userAccount[3],userAccount[4],userAccount[5])
             return
 
-        elif userAccount[6] >= 0:
+        elif userAccount[6] >= 0:                                                                                       # Login successful
             print("Welcome back", existingUser)
             print("Your last login was", userAccount[7], "days ago")
             print("You haven't reset your password for", userAccount[6], "days")
             userAccount[5] = currentDate
             writeAccount(userAccount[0],userAccount[1],userAccount[2],userAccount[3],userAccount[4],userAccount[5])
             return
-        else:
+        else:                                                                                                           # userAccount[6] is -1
             print("Either your username or password is invalid, please try again!")
             count = count + 1
     print("-"*50)
@@ -73,45 +74,41 @@ def registerMenu():
     while True:
         newUser = input("Please choose username: ")
         for eachLine in accInfo:
-            userName, passWord, enCryptedPwd, eMail, last_reset, last_login = eachLine.split(",")
-            if newUser == userName:
+            eachItem = eachLine.strip().split(",")
+            if newUser == eachItem[0]:                                                                                  # Check if username has been taken
                 print("This username has been taken")
-                print("Please choose option menu again")
-                return                                                                                                  # User force to choose option Menu again
+                break
             else:
-                if newUser[0].islower() and newUser.isalnum() and len(newUser) > 5:
+                if newUser[0].islower() and newUser.isalnum() and len(newUser) > 5 and len(newUser) < 13:               # Check if username followed policies
                     newPass = input("Please choose your password or type 'a' to auto-generate password: ")
-                    if newPass.lower() == "a" and len(newPass) == 1:
+                    if newPass.lower() == "a" and len(newPass) == 1:                                                    # Check if auto-gen pswd
                         print("You have chosen", newPass, "system to auto-generate the password")
                         newPass = ranPwd()
-                    elif len(newPass) < 8:
+                    elif len(newPass) < 8:                                                                              # Check password length
                         print("Your password is too short")
-                        print("Please choose option menu again")
-                        return                                                                                          # User force to choose option Menu again
+                        break
                     else:
-                        if validatePass(newPass) < 3:
+                        if validatePass(newPass) < 3:                                                                   # Check if password followed policies
                             print("Your password combination doesn't follow company's policies")
-                            print("Please choose option menu again")
-                            return                                                                                      # User force to choose option Menu again
-
+                            break
 
                     emailAddress = input("Please enter valid email address: ")
-                    if "@" in emailAddress:
+                    if "@" in emailAddress:                                                                             # Check if email has @
                         print("Congratulations! You have registered to the system")
                         print("Your username: ",newUser)
                         print("Your password: ", newPass)
                         print("Your email address: ", emailAddress)
                         print("Please login again if you want to access the system")
-                        encPwd = rsa.encrypt(newPass.encode(), pbKey).hex()
+                        encPwd = rsa.encrypt(newPass.encode(), pbKey).hex()                                             # Encrypted string
 
-                        writeAccount(newUser, newPass, encPwd, emailAddress, currentDate, currentDate)
+                        writeAccount(newUser, newPass, encPwd, emailAddress, currentDate, currentDate)                  # Write to accounts.txt
                         return
                     else:
                         print("Your email address is not valid")
-                        print("Please choose option menu again")
-                        return
+
+                        break
                 else:
-                    print("You haven't choose the correct username policy")
+                    print("You haven't followed the correct username policy")
                     break
 
 
@@ -119,43 +116,48 @@ def resetPwdMenu():
     global userAccount
 
     print("Welcome to Reset Password Menu")
-    userAccount[1], userAccount[2] = resetPwd()
-    userAccount[4] = currentDate
-    writeAccount(userAccount[0], userAccount[1], userAccount[2], userAccount[3], userAccount[4], userAccount[5])
+    userAccount[1], userAccount[2] = resetPwd()                                                                         # Call reset function
+    userAccount[4] = currentDate                                                                                        # Update changed password date
+    writeAccount(userAccount[0], userAccount[1], userAccount[2], userAccount[3], userAccount[4], userAccount[5])        # Write to accounts.txt
 
 
 def resetPwd():
     while True:
         newPass = input("Please choose your password or type 'a' to auto-generate password: ")
         print("You have chosen: ", newPass)
-        if newPass.lower() == "a" and len(newPass) == 1:
+        if newPass.lower() == "a" and len(newPass) == 1:                                                                # Check if auto-gen password
             print("Password will be auto-generate")
-            newPass = ranPwd()
+            newPass = ranPwd()                                                                                          # Call Reset Password Function
             print("Your new password is", newPass)
             break
-        elif len(newPass) < 8:
+        elif len(newPass) < 8:                                                                                          # Check if password length is ok
             print("Your password is too short")
             # print("Please choose option menu again")
             # return
         else:
-            if validatePass(newPass) < 3:
+            if validatePass(newPass) < 3:                                                                               # Check if password followed policies
                 print("Your password combination doesn't follow company's policies")
                 print("Please try again!")
             else:
                 print("Your new password is", newPass)
                 break
-    encPwd = rsa.encrypt(newPass.encode(), pbKey).hex()
+    encPwd = rsa.encrypt(newPass.encode(), pbKey).hex()                                                                 # Encrypted string from keys
     return newPass, encPwd
+
 def viewAccountMenu():
     print("Welcome to View Account Menu")
     print("Only System Administrator can access this menu")
     print("Please login with SA credentials")
     saUser = input("Please type SA account: ")
     saPswd = input("Please type SA password: ")
-    if saUser == adminUser and saPswd == adminPass:
+    if saUser == adminUser and saPswd == adminPass:                                                                     # Check SA Credentials
+        print("*"*50)
+        print("Username\t","Password\t","Encrypted\t","Email\t","Last_Login\t","Last_Password_Changed")                 # Setup header
         for eachLine in accInfo:
-            for eachItem in eachLine.split(","):
-                print(eachItem)
+            cleanLine = eachLine.strip()
+            for eachItem in cleanLine.split(","):
+                print(eachItem, end = "\t\t")
+            print("")
     else:
         print("You haven't provided valid SA credentials")
 def ranPwd():
@@ -166,7 +168,7 @@ def ranPwd():
     while True:
         randomPwd = "".join([secrets.choice(allPossibleChar) for i in range(8)])                                        # Random password from possible characters in length of 8 characters
 
-        if validatePass(randomPwd) >= 3:                                                                                # Check if at least 3 conditions fulfiled
+        if validatePass(randomPwd) >= 3:                                                                                # Check if at least 3 of 4 conditions fulfiled
             break
 
     return randomPwd
@@ -188,9 +190,8 @@ def validatePass(password):
 def validateUser(existingUser, existingPwd):
     for eachLine in accInfo:
         eachItem = []
-        # userName, passWord, enCryptedPwd, eMail, lastReset, lastLogin = eachLine.strip().split(",")
         eachItem = eachLine.strip().split(",")
-        if existingUser == eachItem[0] and existingPwd == eachItem[1]:
+        if existingUser == eachItem[0] and existingPwd == eachItem[1]:                                                  # Check if username/password are matched
             lastReset = datetime.strptime(eachItem[4], "%d/%m/%y")
             lastLogin = datetime.strptime(eachItem[5], "%d/%m/%y")
             print(lastReset, lastLogin)
@@ -199,33 +200,37 @@ def validateUser(existingUser, existingPwd):
             eachItem.append((currentDateTime - lastReset).days)
             eachItem.append((currentDateTime - lastLogin).days)
             return eachItem
-    eachItem = [existingUser,existingPwd,"","","","",-1,-1]
+    eachItem = [existingUser,existingPwd,"","","","",-1,-1]                                                             # Set days to minus to indicate bad username/password
     return eachItem
 
-def writeAccount(user, pwd, enc, email, login, change):
-
-    lineIndex = -1
-    for i, eachLine in enumerate(accInfo):
+def writeAccount(user, pwd, enc, email, login, change):                                                                 # Frunction to write info to file
+    global accInfo
+    foundUser = False
+    for i, eachLine in enumerate(accInfo):                                                                              # Check if existing user
         eachItem = eachLine.strip().split(",")
         if user == eachItem[0]:
+            foundUser = True
             lineIndex = i                                                                                               # Get line index where username is existed
             oldLine = [user, pwd, enc, email, str(login), str(change)]
             accInfo[i] = ",".join(oldLine) + "\n"                                                                       # Replace new information to line index
             with open(fileName,"w") as writeFile:
                 writeFile.writelines(accInfo)
+            with open(fileName, "r") as readFile:
+                accInfo = readFile.readlines()                                                                          # Re-read to get latest info from file after wrote
 
-    if lineIndex == -1:                                                                                                 # If username is new register user
+    if foundUser == False:                                                                                              # If username is new register user
         newLine = [user, pwd, enc, email, str(login), str(change)]
         with open(fileName, "r+") as writeFile:
             info = writeFile.readlines()
             # print(info)
             writeFile.write("\n")
             writeFile.write(",".join(newLine))
-
+        with open(fileName, "r") as readFile:
+            accInfo = readFile.readlines()                                                                              # Re-read to get latest info from file after wrote
     return
-# -------------------------variables--------------
+# -------------------------variables-----------------------------------------------
 
-fileName = "account.txt"
+fileName = "accounts.txt"
 currentDateTime = datetime.now()
 currentDate = currentDateTime.strftime("%d/%m/%y")
 choice = ""
@@ -237,6 +242,7 @@ dayAfterResetPwd = 0
 dayAfterLastLogin = 0
 dayToReset = 120
 dayToNotify = 10
+secondToDelay = 2
 
 nonAlphaString = string.punctuation
 smallAlphaChar = string.ascii_lowercase
@@ -245,16 +251,15 @@ numChar = string.digits
 allPossibleChar = nonAlphaString + smallAlphaChar + capAlphaChar + numChar                                              # Concatenate with all possible characters for randomising password
 
 pvKey, pbKey = rsa.newkeys(256)                                                                                         # Generate Keys for encryption
-# ----------------------the main code----------------
-try:
+# ----------------------the main code--------------------------------------------------
+try:                                                                                                                    # Try to open if file existed else create new file
     with open(fileName, 'r') as accFile:
         accInfo = accFile.readlines()
 except FileNotFoundError:
-    accFile = open(fileName, "w+")
-    accInfo = accFile.readlines()
-# for line in accInfo:
-#     info = line.split(",")
-#     print(info[0])
+    with open(fileName, "w+") as accFile:
+        print("No account data found!")
+        print("Account data has been created\n")
+        accInfo = accFile.readlines()
 
 print("-"*50)
 print("Welcome to Gelos Enterprises System")
@@ -271,25 +276,30 @@ while choice.lower() != "x":
         viewAccountMenu()
     elif choice.lower() == "d":
         if userAccount[0] == "":
+            print("-" * 50)
             print("You haven't login to the system yet")
-            print("Please login with valid username before choose this option")
+            print("Please login with valid username before choose this option\n")
         else:
-            print("Hi", userAccount[0], "You will be redirected to reset your password now")
+            print("-" * 50)
+            print("Hi", userAccount[0], "You will be redirected to reset your password now\n")
             resetPwdMenu()
     elif choice.lower() == "m":                                                                                         # To display option menu again
         optionMenu()
+        print("-" * 50)
     elif choice.lower() == "x":
         print("You have chosen to exit the program")
+        print("-" * 50)
         pass
     else:
         print("You haven't chosen the valid option")
+        print("-" * 50)
 
-# accFile.close()
 logoutDateTime = datetime.now()
 loginPeriod = logoutDateTime - currentDateTime
 
 print("You are in the system for: ", loginPeriod)
 print("You will be exited in 2 seconds")
-while (datetime.now() - logoutDateTime).seconds < 2:
-    pass
+while (datetime.now() - logoutDateTime).seconds < secondToDelay:                                                        # Delay seconds
+    pass                                                                                                                # Do nothing, just wait until while loop is false
+print("-"*50)
 print("bye!!")
